@@ -36,10 +36,13 @@ apply_kitty() {
   # Copy template
   mkdir -p "$STATE_DIR"/user/generated/terminal
   cp "$SCRIPT_DIR/terminal/kitty-theme.conf" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
+  
   # Apply colors
+  local sed_args=()
   for i in "${!colorlist[@]}"; do
-    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
+    sed_args+=("-e" "s/[\$]${colorlist[$i]#\$} #/${colorvalues[$i]#\#}/g")
   done
+  sed -i "${sed_args[@]}" "$STATE_DIR"/user/generated/terminal/kitty-theme.conf
 
   # Reload
   if ! pgrep -f kitty >/dev/null; then
@@ -57,10 +60,13 @@ apply_anyterm() {
   # Copy template
   mkdir -p "$STATE_DIR"/user/generated/terminal
   cp "$SCRIPT_DIR/terminal/sequences.txt" "$STATE_DIR"/user/generated/terminal/sequences.txt
+  
   # Apply colors
+  local sed_args=()
   for i in "${!colorlist[@]}"; do
-    sed -i "s/${colorlist[$i]} #/${colorvalues[$i]#\#}/g" "$STATE_DIR"/user/generated/terminal/sequences.txt
+    sed_args+=("-e" "s/[\$]${colorlist[$i]#\$} #/${colorvalues[$i]#\#}/g")
   done
+  sed -i "${sed_args[@]}" "$STATE_DIR"/user/generated/terminal/sequences.txt
 
   sed -i "s/\$alpha/$term_alpha/g" "$STATE_DIR/user/generated/terminal/sequences.txt"
 
