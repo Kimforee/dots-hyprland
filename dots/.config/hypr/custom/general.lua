@@ -26,6 +26,16 @@ hl.gesture({
     direction = "horizontal",
     action = "unset"
 })
+hl.gesture({
+    fingers = 4,
+    direction = "up",
+    action = "unset"
+})
+hl.gesture({
+    fingers = 4,
+    direction = "down",
+    action = "unset"
+})
 
 -- 2. Register custom gestures
 hl.gesture({
@@ -42,4 +52,18 @@ hl.gesture({
     fingers = 3,
     direction = "horizontal",
     action = "workspace"
+})
+hl.gesture({
+    fingers = 3,
+    direction = "up",
+    action = function()
+        hl.dispatch(hl.dsp.global("quickshell:overviewWorkspacesToggle"))
+    end
+})
+hl.gesture({
+    fingers = 3,
+    direction = "down",
+    action = function()
+        hl.dispatch(hl.dsp.global("quickshell:overviewWorkspacesToggle"))
+    end
 })
