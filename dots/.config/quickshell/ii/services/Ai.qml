@@ -40,14 +40,22 @@ Singleton {
     // property var messages: []
     property var messageIDs: []
     property var messageByID: ({})
-    readonly property var apiKeys: KeyringStorage.keyringData?.apiKeys ?? {}
+    readonly property var apiKeys: {
+        let keys = KeyringStorage.keyringData?.apiKeys ?? {};
+        const envGeminiKey = Quickshell.env("GEMINI_API_KEY") || Quickshell.env("API_KEY");
+        if ((!keys.gemini || keys.gemini.length === 0) && envGeminiKey && envGeminiKey.length > 0) {
+            keys = Object.assign({}, keys, { "gemini": envGeminiKey });
+        }
+        return keys;
+    }
     readonly property var apiKeysLoaded: KeyringStorage.loaded
     readonly property bool currentModelHasApiKey: {
         const model = models[currentModelId];
         if (!model || !model.requires_key) return true;
-        if (!apiKeysLoaded) return false;
         const key = apiKeys[model.key_id];
-        return (key?.length > 0);
+        if (key && key.length > 0) return true;
+        if (!apiKeysLoaded) return false;
+        return false;
     }
     property var postResponseHook
     property real temperature: Persistent.states?.ai?.temperature ?? 0.5
@@ -603,7 +611,13 @@ Singleton {
             requester.currentStrategy.reset(); // Reset strategy state
 
             /* Put API key in environment variable */
-            if (model.requires_key) requester.environment[`${root.apiKeyEnvVarName}`] = root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : ""
+            if (model.requires_key) {
+                let key = root.apiKeys ? (root.apiKeys[model.key_id] ?? "") : "";
+                if ((!key || key.length === 0) && model.key_id === "gemini") {
+                    key = Quickshell.env("GEMINI_API_KEY") || Quickshell.env("API_KEY") || "";
+                }
+                requester.environment[`${root.apiKeyEnvVarName}`] = key;
+            }
 
             /* Build endpoint, request data */
             const endpoint = root.currentApiStrategy.buildEndpoint(model);
