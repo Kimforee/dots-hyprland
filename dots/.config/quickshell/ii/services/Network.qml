@@ -152,12 +152,21 @@ Singleton {
         }
     }
 
+    Timer {
+        id: updateDebounceTimer
+        interval: 1000
+        repeat: false
+        onTriggered: {
+            updateConnectionType.startCheck();
+            wifiStatusProcess.running = true;
+            updateNetworkName.running = true;
+            updateNetworkStrength.running = true;
+        }
+    }
+
     // Status update
     function update() {
-        updateConnectionType.startCheck();
-        wifiStatusProcess.running = true
-        updateNetworkName.running = true;
-        updateNetworkStrength.running = true;
+        updateDebounceTimer.restart();
     }
 
     Process {

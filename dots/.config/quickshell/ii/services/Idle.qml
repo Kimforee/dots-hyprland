@@ -2,6 +2,7 @@ pragma Singleton
 import qs.modules.common
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 
 /**
@@ -10,16 +11,24 @@ import Quickshell.Wayland
 Singleton {
     id: root
 
+    function load() {
+        // Force init
+    }
+
     property alias inhibit: idleInhibitor.enabled
     inhibit: false
+
+    Component.onCompleted: {
+        if (Persistent.ready) {
+            root.inhibit = Boolean(Persistent.states?.idle?.inhibit);
+        }
+    }
 
     Connections {
         target: Persistent
         function onReadyChanged() {
-            if (!Persistent.isNewHyprlandInstance) {
-                root.inhibit = Persistent.states.idle.inhibit;
-            } else {
-                Persistent.states.idle.inhibit = root.inhibit;
+            if (Persistent.ready) {
+                root.inhibit = Boolean(Persistent.states?.idle?.inhibit);
             }
         }
     }
@@ -30,23 +39,41 @@ Singleton {
         } else {
             root.inhibit = !root.inhibit;
         }
-        Persistent.states.idle.inhibit = root.inhibit;
+        if (Persistent.ready && Persistent.states?.idle) {
+            Persistent.states.idle.inhibit = root.inhibit;
+        }
+    }
+
+    IpcHandler {
+        target: "idle"
+        function toggle(): void {
+            root.toggleInhibit();
+        }
+        function inhibit(): void {
+            root.toggleInhibit(true);
+        }
+        function uninhibit(): void {
+            root.toggleInhibit(false);
+        }
+    }
+
+    Process {
+        id: systemdInhibitor
+        running: root.inhibit
+        command: ["systemd-inhibit", "--what=idle:sleep", "--why=Keep system awake toggle", "sleep", "infinity"]
     }
 
     IdleInhibitor {
         id: idleInhibitor
         window: PanelWindow {
-            // Inhibitor requires a "visible" surface
-            // Actually not lol
-            implicitWidth: 0
-            implicitHeight: 0
+            visible: root.inhibit
+            implicitWidth: 1
+            implicitHeight: 1
             color: "transparent"
-            // Just in case...
             anchors {
                 right: true
                 bottom: true
             }
-            // Make it not interactable
             mask: Region {
                 item: null
             }
